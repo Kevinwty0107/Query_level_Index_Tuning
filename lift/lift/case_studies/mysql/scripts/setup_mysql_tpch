@@ -1,0 +1,9 @@
+git clone https://github.com/catarinaribeir0/queries-tpch-dbgen-mysql.git
+cd 2.17.3/dbgen/
+cp makefile.suite makefile
+# Follow repo instructions to set make file and tpcd.h values.
+nano makefile
+nano tpcd.h
+make
+./dbgen -s 1.0
+cd queries-tpch-dbgen-mysql/

@@ -1,0 +1,25 @@
+{
+    "type": "dqfd_agent",
+    "supervised_weight": 0.5,
+    "expert_margin": 0.25,
+    "demo_memory_capacity": 1000,
+    "demo_sampling_ratio": 0.2,
+    "discount": 0.97,
+    "batch_size": 64,
+    "memory": {
+        "type": "replay",
+        "capacity": 10000
+    },
+    "optimizer": {
+      "type": "adam",
+      "learning_rate": 1e-3
+    },
+    "explorations_spec": {
+        "type": "epsilon_decay",
+        "initial_epsilon": 1.0,
+        "final_epsilon": 0.1,
+        "timesteps": 1e6
+    },
+    "update_frequency": 4,
+    "repeat_update": 4
+}

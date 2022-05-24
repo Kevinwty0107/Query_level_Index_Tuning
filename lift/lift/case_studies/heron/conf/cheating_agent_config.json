@@ -1,0 +1,7 @@
+{
+    "type": "cheating",
+    "lower_spout_par": 1,
+    "upper_spout_par": 2,
+    "increase_amount": 3,
+    "num_bolts" : 2
+}

@@ -1,0 +1,10 @@
+{
+  "database": "index_test",
+  "collection": "tiny",
+  "host": "hasu.cl.cam.ac.uk",
+  "profiling_level": 1,
+  "slow_threshold": 0,
+  "batch_size": 10,
+  "ttl": 120,
+  "interval": 30
+}

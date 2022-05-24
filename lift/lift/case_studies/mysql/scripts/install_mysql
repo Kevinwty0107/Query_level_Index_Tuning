@@ -1,0 +1,64 @@
+sudo apt-get install mysql-server
+
+# Needed for python client
+sudo apt-get install libmysqlclient-dev
+
+# Point innodb default file to scratch(!)
+nano /etc/mysql/my.cnf
+add:
+my.cnf contents
+
+# Allow local infiles
+# Make sure there is space to accommodate load in
+https://stackoverflow.com/questions/10762239/mysql-enable-load-data-local-infile
+sudo nano /etc/mysql/my.cnf
+[client]
+local-infile
+[mysqld]
+innodb_temp_data_file_path=ibtmp1:12M:autoextend:max:500M
+local-infile
+
+
+
+# Below is to change defualt data location
+# Table file settings
+https://stackoverflow.com/questions/730579/error-1114-hy000-the-table-is-full
+https://stackoverflow.com/questions/44744867/mysql-error-1114-hy000-the-table-is-full-only-for-specific-values
+mkdir /local/scratch/mks40/mysql_data
+
+# Update permission.
+
+# Check apparmor permissions
+sudo nano /etc/apparmor.d/tunables/alias
+alias /var/lib/mysql/ -> //local/scratch/mks40/mysql_data/,
+
+Restart app-armor:
+sudo apt-get install systemd
+sudo /etc/init.d/apparmor stop
+sudo /etc/init.d/apparmor start
+
+sudo systemctl restart apparmor
+or
+sudo /etc/init.d/apparmor stop
+sudo /etc/init.d/apparmor start
+
+# Check permissions
+https://askubuntu.com/questions/949998/apparmor-error-after-mysql-folder-relocation
+https://www.digitalocean.com/community/tutorials/how-to-move-a-mysql-data-directory-to-a-new-location-on-ubuntu-16-04
+
+# Check socket sym link
+https://stackoverflow.com/questions/11990708/error-cant-connect-to-local-mysql-server-through-socket-var-run-mysqld-mysq
+
+Restart demon:
+sudo /etc/init.d/mysql stop
+sudo /etc/init.d/mysql start
+
+# Create user
+sudo mysql
+CREATE USER 'mks40'@'localhost' IDENTIFIED BY '';
+GRANT ALL PRIVILEGES ON * . * TO 'mks40'@'localhost';
+FLUSH PRIVILEGES;
+
+
+# Copy 2.17.3 dbgen file to downloads and scratch
+# Then run create_load_alter.sh

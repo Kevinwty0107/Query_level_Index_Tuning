@@ -1,0 +1,39 @@
+{
+    "type" : "dqfd_agent",
+    "update_mode": {
+        "unit": "timesteps",
+        "batch_size": 32,
+        "frequency": 8
+    },
+    "memory": {
+        "type": "replay",
+        "capacity": 10000,
+        "include_next_states": true
+    },
+    "optimizer": {
+        "type": "rmsprop",
+        "learning_rate": 0.001
+    },
+    "discount": 0.75,
+    "entropy_regularization": null,
+    "target_sync_frequency": 24,
+    "target_update_weight": 1.0,
+    "actions_exploration": {
+        "type": "epsilon_anneal",
+        "initial_epsilon": 1.0,
+        "final_epsilon": 0.1,
+        "timesteps": 350
+    },
+    "saver": null,
+    "summarizer": {
+        "directory": null,
+        "labels": [],
+        "seconds": 120
+    },
+    "demo_memory_capacity": 50000,
+    "demo_sampling_ratio": 0.1,
+    "expert_margin": 0.1,
+    "supervised_weight": 1,
+    "batched_observe": false
+}
+

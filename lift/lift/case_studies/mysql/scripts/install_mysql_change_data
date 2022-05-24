@@ -1,0 +1,140 @@
+Clear prior installs:
+https://help.cloud66.com/node/how-to-guides/databases/shells/uninstall-mysql.html
+
+# Install server.
+sudo apt-get install mysql-server
+
+# Shutdown
+sudo /etc/init.d/mysql stop
+
+# Needed for python client
+sudo apt-get install libmysqlclient-dev
+
+cd /local/scratch/mks40/
+git clone git@gitlab.com:michaelschaarschmidt/lift.git
+git clone git@github.com:rlgraph/rlgraph.git
+svn checkout https://www.fluphone.org/repoVal/trace_benchmark/
+
+# Allow local infiles
+# Make sure there is space to accommodate local init
+https://stackoverflow.com/questions/10762239/mysql-enable-load-data-local-infile
+sudo nano /etc/mysql/my.cnf
+[client]
+local-infile
+[mysqld]
+innodb_temp_data_file_path=ibtmp1:12M:autoextend:max:500M
+local-infile
+
+# Below is to change defualt data location
+# Table file settings
+https://stackoverflow.com/questions/730579/error-1114-hy000-the-table-is-full
+https://stackoverflow.com/questions/44744867/mysql-error-1114-hy000-the-table-is-full-only-for-specific-values
+mkdir /local/scratch/mks40/mysql_data
+
+# Point innodb default file to scratch(!)
+nano /etc/mysql/my.cnf
+add:
+my.cnf contents
+-> check mysql_data vs mysql_data/mysql/
+
+# Follow tutorial
+https://www.digitalocean.com/community/tutorials/how-to-move-a-mysql-data-directory-to-a-new-location-on-ubuntu-16-04
+sudo rsync -av /var/lib/mysql /local/scratch/mks40/mysql_data
+# Update permissions on new folder:
+sudo chown mysql:mysql -R mysql/
+sudo chmod 755 -R mysql/
+
+# Check apparmor permissions
+sudo nano /etc/apparmor.d/tunables/alias
+alias /var/lib/mysql/ -> //local/scratch/mks40/mysql_data/mysql/,
+
+# sudo nano /etc/apparmor.d/usr.sbin.mysqld
+add
+# Allow data dir access
+  /local/scratch/mks40/mysql_data/mysql/ r,
+  /local/scratch/mks40/mysql_data/mysql/** rwk,
+
+Restart app-armor:
+sudo apt-get install systemd
+sudo systemctl restart apparmor
+or
+sudo /etc/init.d/apparmor stop
+sudo /etc/init.d/apparmor start
+
+# Wenn kein socket access:
+ [client] / [serverd] must have matching socket locations
+
+
+# Always check logfile
+# Some config values are not supported by newer mysql versions, always need to check
+sudo tail -n 50 /var/log/mysql/error.log
+
+
+
+# Check
+sudo journalctl -xe
+for bugs
+
+# Update pw in safe mode because auth is not activated default
+# ERROR 1524 (HY000): Plugin 'auth_socket' is not loaded
+
+https://stackoverflow.com/questions/37879448/mysql-fails-on-mysql-error-1524-hy000-plugin-auth-socket-is-not-loaded/52322973
+sudo /etc/init.d/mysql stop
+sudo mkdir -p /var/run/mysqld
+sudo chown mysql:mysql /var/run/mysqld
+sudo mysqld_safe --skip-grant-tables &
+mysql -uroot
+use mysql;
+update user set authentication_string=PASSWORD("") where User='root';
+update user set plugin="mysql_native_password" where User='root';
+flush privileges;
+quit
+
+Restart demon:
+sudo /etc/init.d/mysql stop
+sudo /etc/init.d/mysql start -v
+
+# Create user
+sudo mysql
+CREATE USER 'mks40'@'localhost' IDENTIFIED BY '';
+GRANT ALL PRIVILEGES ON * . * TO 'mks40'@'localhost';
+FLUSH PRIVILEGES;
+
+
+# Copy 2.17.3 dbgen file to downloads and scratch
+ cp -R ~/Downloads/dbgen/ /local/scratch/mks40
+# Then run create_load_alter.sh
+
+
+# In pyenv
+pip install mysqlclient
+
+# Check user exists.
+SELECT user,host,plugin FROM mysql.user;
+
+
+# Login to shell with user.
+mysql -u mks40
+
+# Create database
+CREATE DATABASE tpch;
+USE tpch;
+
+# Drop database
+DROP DATABASE tpch;
+
+# Index creation example
+CREATE INDEX P_BRAND_1 ON PART (P_BRAND);
+
+SHOW INDEX FROM PART;
+
+ALTER TABLE PART DROP P_INDEX BRAND_1;
+
+# Index size.
+SELECT table_name,
+concat( round( data_length / ( 1024 *1024 ) , 2 ) , 'Mb' ) AS 'data_length_mb',
+concat( round( index_length / ( 1024 *1024 ) , 2 ) , 'Mb' ) AS 'index_length_mb',
+concat( round( round( data_length + index_length ) / ( 1024 *1024 ) , 2 ) , 'Mb' )  AS 'total_size_mb'
+FROM information_schema.tables
+WHERE table_schema ='tpch'
+ORDER BY data_length desc;

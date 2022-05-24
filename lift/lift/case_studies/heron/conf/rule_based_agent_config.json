@@ -1,0 +1,7 @@
+{
+    "type" : "rules",
+    "lower_bound" : 0.15,
+    "higher_bound" : 1.0,
+    "max_par" : 8,
+    "increase_amount" : 2
+}

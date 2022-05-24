@@ -1,0 +1,78 @@
+try to simulate a simple compound indexing environment: 
+
+- SPG examples (sorting, TSP, MWM)
+    - state (i.e, particular problem instance) has a static representation (N,K)
+        - e.g. sorting 0,...,9 is (10,1), tsp on cities uniformly sampled from unique square is (10,2)
+        - but...
+            - the N discrete objects don't have to be the same (i think?)
+            - have feature space of size K to augment representations
+
+- 1st thoughts
+    - B-DQN: 
+        - embedding of query + context
+    - N, K
+        - N... query attributes
+            - actually, N/2 query attributes and N/2 noops per query attributes
+            - also, what if fewer than N/2 query attributes? another noop?
+            - output? take as 1st N/2 of N in permutation 
+            - this is stupid for say 1 attribute...
+        - K... represent relevant existing indices for each query attribute
+        - what about other relevant context? the table?! wouldn't want to repeat for all N?
+    - N will rly be 2N for N allowed query attributes, because have to have a noop?
+
+
+- experiments
+    - 1: given a single query, reward permutations that map to a specific compound index
+        - representation
+            - 1,0,2,0,3,0 for query attributes foo, bar, baz; 1,2,0,* for correct compound index foo, bar (+1 for this, -1 for anything other than this)
+                - 0's as noops
+                - ?s 
+                    - noop per query attribute?
+                    - what's correcting ordering of input?
+
+    - 2: given several queries, reward permutations that map to specific compound indices
+        - +1 if associated specified query with index, +1 if associated non-specified query with no index 0,0,0,*, -1 otherwise
+
+    - 3:
+        start to think about system context?
+        can you come up with a toy test like the above? 
+        additional embedding required?
+
+`   - 4:
+        how to add global information? e.g. the table being queried! well remember youre only adding relevant context, so an attribute will only be associated with an index on that attributes + attributes from its table
+
+    - TODO  
+        - build a controller!
+        - when you recode the SPG actor + critic, add your comments you drew in that diagram, etc.
+        - bidirectional GRU operation
+
+
+
+intuitions
+
+Aside: High-level on engineering a problem-expositive representation for a particular model like DQN or SPG (at input and output)...
+
+- Token / integer token valued representation is the ground truth about the structure of the particular problem 
+    - representation used at input and output (at input we explicitly say this token stands for this thing, at output we implicitly say this value corresponds to the value for this specific scenario)
+    - e.g. in SPG, that in the input there are certain symbols (which we know correspond to attributes) and there are certain other symbols (which we know correspond to indices over attributes)
+- Rewards are the ground truth about the solution to the particular problem.
+    - rewards are applied to specific representations / output representations...
+        - can seem arbitrary at start, but it is analogous to coding a recursive function with function before the function 'exists' 
+        - or think of this as agent's exploration before exploitation
+    - ...which in turn informas relationships between inputs (e.g. all else equal, if using foo in one output and bar in another output returned similar rewards, then foo and bar should have similar representations in space)
+    - ...feedback...
+
+SPG: 
+
+- TODO can add comments when you clean up code / copy code over to a controller
+- TODO dig deeper into dynamics in pdb with pytorch (define-by-run after all...)
+- given that we've cast this as a permutation problem, architecture is quite intuitive:
+    - ...
+    - see diagram i did
+
+
+
+#
+
+pytorch recurrent "outputs" are hidden states i.e. https://stackoverflow.com/questions/48302810/whats-the-difference-between-hidden-and-output-in-pytorch-lstm
+so for a M:M pytorch model, have to add something on top of "outputs" i.e. https://discuss.pytorch.org/t/rnn-for-many-to-many-classification-task/15457/2

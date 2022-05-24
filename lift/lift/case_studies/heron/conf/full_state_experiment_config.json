@@ -1,0 +1,120 @@
+{
+    "cluster" : "aurora",
+    "role" : "be255",
+    "env" : "devel",
+    "topology" : "WordCountTopology",
+    "load_dhalion" : false,
+    "delay" : 180,
+    "wait_time" : 60,
+    "fail_wait_time" : 30,
+    "failures" : 5,
+    "state_metrics" : ["backpressure", "failures", "cpu", "memory", "capacity"],
+    "reward_metrics" : ["latency", "ack_count"],
+    "spouts" : ["sentence"],
+    "bolts" : ["split", "count"],
+    "latency_component" : "sentence",
+    "ack_count_component" : "count",
+    "stages_independent" : true,
+    "use_max" : false,
+    "plot_rewards" : true,
+    "reward_plot_file" : "/home/be255/ProjectWork/PartIII/data/plots/demoed_delayed_agent.pdf",
+    "pretrain_serialise" : true,
+    "log_rewards": true,
+    "demo_dir": "/home/be255/ProjectWork/PartIII/data/demos/",
+    "demo_file": "cheating_delayed_train.csv",
+    "pretrain_file": "full_sequence_agent.csv",
+    "test_file": "cheating_delayed_test.csv",
+    "results_dir": "/home/be255/ProjectWork/PartIII/tests",
+    "results_file": "online_full_state_new_topology.csv",
+    "episodes" : 30,
+    "schemas" : "full_state",
+    "reward_csv" : "/home/be255/ProjectWork/PartIII/data/through_latency.csv",
+    "save_dir" : "/home/be255/ProjectWork/PartIII/logs/",
+    "parallelism" : {
+        "split" : 3,
+        "count" : 3,
+        "sentence" : 2
+    },
+    "acceptable_misses": {
+        "cpu" : [],
+        "capacity" : ["sentence"],
+        "memory" : [],
+        "backpressure" : [],
+        "failures" : [],
+        "latency" : [],
+        "ack_count" : []
+    },
+    "epochs" : 25,
+    "batch_size" : 128,
+    "max_over_instances": false,
+    "max_instances" : 18,
+    "config_path" : "/home/be255/.heron/conf",
+    "reward_generator" : "resource",
+    "reward_generator_args" : {
+        "alpha" : 0.75,
+        "beta" : 0.0,
+        "max_instances" : 18
+    },
+    "model_generator": "full_state",
+    "model_generator_args": {
+        "load_from_json" : false,
+        "json_dir" : "/home/be255/ProjectWork/PartIII/data/scaler_params",
+        "json_file" : "full_state_scaler_params.json"
+    },
+    "max_increase" : 3,
+    "max_decrease" : -3,
+    "metric_dicts" : {
+        "cpu" : {
+            "type" : "float",
+            "continuous" : true,
+            "shape" : [],
+            "min" : 0.0,
+            "max" : 2.0,
+            "index" : 0
+        },
+        "memory" : {
+            "type" : "float",
+            "continuous" : true,
+            "shape" : [],
+            "min" : 0.0,
+            "max" : 1.0,
+            "index" : 1
+        },
+        "capacity" : {
+            "type" : "float",
+            "continuous" : true,
+            "shape" : [],
+            "min" : 0.0,
+            "max" : 1.0,
+            "index" : 2
+        },
+        "failures" : {
+            "type" : "float",
+            "continuous" : true,
+            "shape" : [],
+            "index" : 3
+        },
+        "backpressure" : {
+            "type" : "float",
+            "continuous" : true,
+            "shape" : [],
+            "index" : 4
+        }
+    },
+    "layer_size" : 64,
+    "path_to_jar" : "/home/be255/ProjectWork/PartIII/project_code/build/libs/project_code-all-1.0.jar",
+    "class_name" : "tutorial.WordCountTopology",
+    "load_generator" : "alternating_fixed",
+    "load_config" : {
+        "component" : "sentence",
+        "load_generator_args" : {
+            "low" : 1,
+            "high" : 2,
+            "period_length" : 9,
+            "periods" : 4,
+            "save_file" : "/home/be255/ProjectWork/PartIII/logs/experiment_config_memory.npy"
+        }
+    }
+}
+
+

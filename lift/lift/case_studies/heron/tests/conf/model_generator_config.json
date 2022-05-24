@@ -1,0 +1,16 @@
+{
+    "load_generator" : "combined",
+    "load_config" : {
+        "component" : "sentence",
+        "load_generator_args" : {
+            "load_generators" : ["alternating_fixed", "updown", "downup"],
+            "low" : 1,
+            "high" : 2,
+            "period_length" : 6,
+            "periods" : 3,
+            "start_length" : 3,
+            "epoch_length" : 18,
+            "save_file" : "/home/be255/ProjectWork/PartIII/logs/experiment_config_memory.npy"
+        }
+    }
+}

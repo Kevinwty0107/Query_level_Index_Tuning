@@ -1,0 +1,26 @@
+{
+    "parallelism" : {
+        "split" : 2,
+        "consumer" : 3,
+        "word" : 1
+    },
+    "load_config" : {
+        "component" : "word",
+        "load_generator" : "alternating",
+        "load_generator_args" : {
+            "high" : 4,
+            "periods" : 2,
+            "save_file": "tests/test_aperiodic_config_memory.npy"
+        },
+        "load_process" : "aperiodic",
+        "load_process_args" : {
+            "interval_generator" : "constant"
+        },
+        "interval_generator_args" : {
+            "period" : 0.001,
+            "save_file" : "tests/test_aperiodic_config_times.npy"
+        }
+    }
+}
+
+

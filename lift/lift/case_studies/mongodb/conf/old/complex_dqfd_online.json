@@ -1,0 +1,26 @@
+{
+  "loglevel": "info",
+  "pretrain": false,
+  "pretrain_steps": 5000,
+  "demo_sampling_ratio": 0.2,
+  "supervised_weight": 0.00001,
+  "expert_margin": 0.1,
+  "memory_capacity": 100000,
+  "demo_memory_capacity": 100000,
+  "exploration": {
+    "type": "epsilon_decay",
+    "epsilon": 1.0,
+    "epsilon_final": 0.1,
+    "epsilon_timesteps": 1000
+  },
+  "batch_size": 32,
+  "update_rate": 0.25,
+  "update_repeat": 4,
+  "use_target_network": true,
+  "target_network_update_rate": 0.0025,
+  "min_replay_size": 5e2,
+  "learning_rate": 0.001,
+  "optimizer": "adam",
+  "repeat_actions": 1,
+  "discount": 0.99
+}

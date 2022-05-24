@@ -1,0 +1,17 @@
+{
+  "user_name": ["string", 2, 30],
+  "name": ["string", 2, 30],
+  "last_name": ["string", 2, 30],
+  "views": ["int", 0, 100000],
+  "follower_count" : ["int", 0, 100],
+  "follower_ids": ["int_array", 50, 10000],
+  "karma": ["int", 0, 1000000],
+  "profile_text": ["string_array", 50],
+  "status_hashtags": ["string_array", 20],
+  "status_text": ["string_array", 50],
+  "status_date": ["date", 1],
+  "status_count": ["int", 0, 1000],
+  "user_role": ["string", 0, 20],
+  "registration_date": ["date", 10],
+  "location": ["string", 0, 30]
+}

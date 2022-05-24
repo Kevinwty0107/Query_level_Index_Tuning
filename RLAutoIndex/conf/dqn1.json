@@ -1,0 +1,62 @@
+{
+    "schema": {
+        "input_sequence_size": 16,
+        "include_default": false,
+        "max_fields_per_index": 4
+    },
+
+    "agent": {
+        "type": "dqn",
+        "discount": 0.99,
+
+        "huber_loss": true,
+        "optimizer_spec": {
+            "type": "adam",
+            "learning_rate": 0.00025
+        },
+
+        "memory_spec": {
+            "type": "prioritized_replay",
+            "capacity": 2048
+        },
+        "observe_spec": {
+            "buffer_enabled": false
+        },        
+        "network_spec": [{"type": "embedding", "embed_dim": 128, "vocab_size": 0}, 
+                         {"type": "reshape", "flatten": true}, 
+                         {"type": "dense", "units": 128, "activation": "relu", "scope": "dense_1"}],
+        
+        "dueling_q": true,
+        "shared_container_action_target": false,
+        "policy_spec": {
+            "type": "dueling-policy",
+            "units_state_value_stream": 32,
+            "action_adapter_spec": {
+                "pre_network_spec": [{
+                    "type": "dense",
+                    "units": 32
+                }]
+            }
+        },
+        "exploration_spec": {
+            "epsilon_spec": {
+                "decay_spec": {
+                    "type": "linear_decay",
+                    "from": 1.0,
+                    "to": 0.05,
+                    "start_timestep": 0,
+                    "num_timesteps": 2000
+                }
+            }
+        },
+        "update_spec": {
+            "update_mode": "time_steps",
+            "do_updates": true,
+            "update_interval": 4,
+            "steps_before_update": 32,
+            "batch_size": 32,
+            "sync_interval": 24,
+            "update_steps": 4
+        }
+    }
+}

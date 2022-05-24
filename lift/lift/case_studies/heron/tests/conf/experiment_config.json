@@ -1,0 +1,57 @@
+{
+    "cluster" : "aurora",
+    "role" : "be255",
+    "env" : "devel",
+    "topology" : "WordCountTopology",
+    "delay" : 180,
+    "wait_time" : 15,
+    "failures" : 5,
+    "state_metrics" : ["cpu", "capacity", "memory", "backpressure", "failures"],
+    "reward_metrics" : ["latency", "ack_count"],
+    "latency_component" : "sentence",
+    "ack_count_component" : "count",
+    "episodes" : 2,
+    "schemas" : "simple",
+    "reward_csv" : "/home/be255/ProjectWork/PartIII/data/through_latency.csv",
+    "save_dir" : "/home/be255/ProjectWork/PartIII/logs/",
+    "parallelism" : {
+        "split" : 2,
+        "count" : 2,
+        "sentence" : 2
+    },
+    "acceptable_misses": {
+        "cpu" : [],
+        "capacity" : ["sentence"],
+        "memory" : [],
+        "backpressure" : [],
+        "failures" : [],
+        "latency" : [],
+        "ack_count" : []
+    },
+    "max_over_instances": true,
+    "max_instances" : 8,
+    "config_path" : "/home/be255/.heron/conf",
+    "reward_generator" : "linear",
+    "reward_generator_args" : {
+        "alpha" : 0.5
+    },
+    "model_generator": "simple",
+    "layer_size" : 128,
+    "path_to_jar" : "/home/be255/ProjectWork/PartIII/project_code/build/libs/project_code-all-1.0.jar",
+    "class_name" : "tutorial.WordCountTopology",
+    "load_config" : {
+        "component" : "sentence",
+        "load_generator" : "alternating",
+        "load_generator_args" : {
+            "high" : 3,
+            "periods" : 2,
+            "save_file" : "/home/be255/ProjectWork/PartIII/logs/experiment_config_memory.npy"
+        },
+        "load_process" : "periodic",
+        "load_process_args" : {
+            "period" : 75
+        }
+    }
+}
+
+
