@@ -1,0 +1,407 @@
+# Copyright 2018/2019 The RLgraph authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+from __future__ import absolute_import, division, print_function
+
+import time
+from copy import deepcopy
+
+import numpy as np
+from six.moves import xrange as range_
+
+from rlgraph.components import PreprocessorStack
+from rlgraph.execution.worker import Worker
+from rlgraph.spaces.containers import Dict, Tuple
+from rlgraph.utils.rlgraph_errors import RLGraphError
+from rlgraph.utils.util import default_dict
+
+
+class SingleThreadedWorker(Worker):
+
+    def __init__(self, preprocessing_spec=None, worker_executes_preprocessing=True, **kwargs):
+        super(SingleThreadedWorker, self).__init__(**kwargs)
+
+        self.logger.info("Initialized single-threaded executor with {} environments '{}' and Agent '{}'".format(
+            self.num_environments, self.vector_env.get_env(), self.agent
+        ))
+
+        # Switch off worker preprocessing if nothing to do anyway.
+        if preprocessing_spec is None or preprocessing_spec == []:
+            worker_executes_preprocessing = False
+
+        self.worker_executes_preprocessing = worker_executes_preprocessing
+        if self.worker_executes_preprocessing:
+            self.preprocessors = {}
+            self.state_is_preprocessed = {}
+            for env_id in self.env_ids:
+                self.preprocessors[env_id] = self.setup_preprocessor(
+                    preprocessing_spec, self.vector_env.state_space.with_batch_rank()
+                )
+                self.state_is_preprocessed[env_id] = False
+
+        self.apply_preprocessing = not self.worker_executes_preprocessing
+        self.preprocessed_states_buffer = np.zeros(
+            shape=(self.num_environments,) + self.agent.preprocessed_state_space.shape,
+            dtype=self.agent.preprocessed_state_space.dtype
+        )
+
+        # Global statistics.
+        self.env_frames = 0
+        self.finished_episode_returns = [[] for _ in range_(self.num_environments)]
+        self.finished_episode_durations = [[] for _ in range_(self.num_environments)]
+        self.finished_episode_timesteps = [[] for _ in range_(self.num_environments)]
+
+        # Accumulated return over the running episode.
+        self.episode_returns = [0 for _ in range_(self.num_environments)]
+        # The number of steps taken in the running episode.
+        self.episode_timesteps = [0 for _ in range_(self.num_environments)]
+        # Whether the running episode has terminated.
+        self.episode_terminals = [False for _ in range_(self.num_environments)]
+        # Wall time of the last start of the running episode.
+        self.episode_starts = [0 for _ in range_(self.num_environments)]
+        # The current state of the running episode.
+        self.env_states = [None for _ in range_(self.num_environments)]
+
+    @staticmethod
+    def setup_preprocessor(preprocessing_spec, in_space):
+        if preprocessing_spec is not None:
+            # TODO move ingraph for python component assembly.
+            preprocessing_spec = deepcopy(preprocessing_spec)
+            in_space = deepcopy(in_space)
+            # Store scopes (set if not given).
+            scopes = []
+            for i, preprocessor in enumerate(preprocessing_spec):
+                if "scope" not in preprocessor:
+                    preprocessor["scope"] = "preprocessor-{}".format(i)
+                scopes.append(preprocessor["scope"])
+                # Set backend to python.
+                preprocessor["backend"] = "python"
+
+            processor_stack = PreprocessorStack(*preprocessing_spec, backend="python")
+            build_space = in_space
+            for sub_comp_scope in scopes:
+                processor_stack.sub_components[sub_comp_scope].create_variables(input_spaces=dict(
+                    inputs=build_space
+                ), action_space=None)
+                build_space = processor_stack.sub_components[sub_comp_scope].get_preprocessed_space(build_space)
+            processor_stack.reset()
+            return processor_stack
+        else:
+            return None
+
+    def execute_timesteps(self, num_timesteps, max_timesteps_per_episode=0, update_spec=None, use_exploration=True,
+                          frameskip=None, reset=True):
+        return self._execute(
+            num_timesteps=num_timesteps,
+            max_timesteps_per_episode=max_timesteps_per_episode,
+            use_exploration=use_exploration,
+            update_spec=update_spec,
+            frameskip=frameskip,
+            reset=reset
+        )
+
+    def execute_episodes(self, num_episodes, max_timesteps_per_episode=0, update_spec=None, use_exploration=True,
+                         frameskip=None, reset=True):
+        return self._execute(
+            num_episodes=num_episodes,
+            max_timesteps_per_episode=max_timesteps_per_episode,
+            use_exploration=use_exploration,
+            update_spec=update_spec,
+            frameskip=frameskip,
+            reset=reset
+        )
+
+    def _execute(
+        self,
+        num_timesteps=None,
+        num_episodes=None,
+        max_timesteps_per_episode=None,
+        use_exploration=True,
+        update_spec=None,
+        frameskip=None,
+        reset=True
+    ):
+        """
+        Actual implementation underlying `execute_timesteps` and `execute_episodes`.
+
+        Args:
+            num_timesteps (Optional[int]): The maximum number of timesteps to run. At least one of `num_timesteps` or
+                `num_episodes` must be provided.
+            num_episodes (Optional[int]): The maximum number of episodes to run. At least one of `num_timesteps` or
+                `num_episodes` must be provided.
+            use_exploration (Optional[bool]): Indicates whether to utilize exploration (epsilon or noise based)
+                when picking actions. Default: True.
+            max_timesteps_per_episode (Optional[int]): Can be used to limit the number of timesteps per episode.
+                Use None or 0 for no limit. Default: None.
+            update_spec (Optional[dict]): Update parameters. If None, the worker only performs rollouts.
+                Matches the structure of an Agent's update_spec dict and will be "defaulted" by that dict.
+                See `input_parsing/parse_update_spec.py` for more details.
+            frameskip (Optional[int]): How often actions are repeated after retrieving them from the agent.
+                Rewards are accumulated over the number of skips. Use None for the Worker's default value.
+            reset (bool): Whether to reset the environment and all the Worker's internal counters.
+                Default: True.
+
+        Returns:
+            dict: Execution statistics.
+        """
+        assert num_timesteps is not None or num_episodes is not None,\
+            "ERROR: One of `num_timesteps` or `num_episodes` must be provided!"
+
+        # Determine `max_timesteps` for this execution run.
+        if self.max_timesteps is not None:
+            max_timesteps = self.max_timesteps
+        elif num_timesteps is not None:
+            max_timesteps = num_timesteps
+        elif max_timesteps_per_episode is not None and max_timesteps_per_episode > 0:
+            max_timesteps = num_episodes * max_timesteps_per_episode
+        else:
+            max_timesteps = 1e6
+
+        # Are we updating or just acting/observing?
+        update_spec = default_dict(update_spec, self.agent.update_spec)
+        self.set_update_schedule(update_spec)
+
+        num_timesteps = num_timesteps or 0
+        num_episodes = num_episodes or 0
+        max_timesteps_per_episode = [max_timesteps_per_episode or 0 for _ in range_(self.num_environments)]
+        frameskip = frameskip or self.frameskip
+
+        # Stats.
+        timesteps_executed = 0
+        episodes_executed = 0
+
+        start = time.perf_counter()
+        episode_terminals = self.episode_terminals
+        if reset is True:
+            self.env_frames = 0
+            self.episodes_since_update = 0
+            self.finished_episode_returns = [[] for _ in range_(self.num_environments)]
+            self.finished_episode_durations = [[] for _ in range_(self.num_environments)]
+            self.finished_episode_timesteps = [[] for _ in range_(self.num_environments)]
+
+            for i, env_id in enumerate(self.env_ids):
+                self.episode_returns[i] = 0
+                self.episode_timesteps[i] = 0
+                self.episode_terminals[i] = False
+                self.episode_starts[i] = time.perf_counter()
+                if self.worker_executes_preprocessing:
+                    self.state_is_preprocessed[env_id] = False
+
+            self.env_states = self.vector_env.reset_all()
+            self.agent.reset()
+        elif self.env_states[0] is None:
+            raise RLGraphError("Runner must be reset at the very beginning. Environment is in invalid state.")
+
+        # Only run everything for at most num_timesteps (if defined).
+        env_states = self.env_states
+        while not (0 < num_timesteps <= timesteps_executed):
+            if self.render:
+                self.vector_env.render()
+
+            time_percentage = min(self.agent.timesteps / max_timesteps, 1.0)
+
+            if self.worker_executes_preprocessing:
+                for i, env_id in enumerate(self.env_ids):
+                    state, _ = self.agent.state_space.force_batch(env_states[i])
+                    if self.preprocessors[env_id] is not None:
+                        if self.state_is_preprocessed[env_id] is False:
+                            self.preprocessed_states_buffer[i] = self.preprocessors[env_id].preprocess(state)
+                            self.state_is_preprocessed[env_id] = True
+                    else:
+                        self.preprocessed_states_buffer[i] = env_states[i]
+                # TODO extra returns when worker is not applying preprocessing.
+                actions = self.agent.get_action(
+                    states=self.preprocessed_states_buffer, use_exploration=use_exploration,
+                    apply_preprocessing=self.apply_preprocessing, time_percentage=time_percentage
+                )
+                preprocessed_states = np.array(self.preprocessed_states_buffer)
+            else:
+                actions, preprocessed_states = self.agent.get_action(
+                    states=np.array(env_states), use_exploration=use_exploration,
+                    apply_preprocessing=True, extra_returns="preprocessed_states", time_percentage=time_percentage
+                )
+
+            # Accumulate the reward over n env-steps (equals one action pick). n=self.frameskip.
+            env_rewards = [0 for _ in range_(self.num_environments)]
+            next_states = None
+
+            # For Dict action spaces, we have to treat each key as an array with batch-rank at index 0.
+            # The action-dict is then translated into a list of dicts where each dict contains the original data
+            # but without the batch-rank.
+            # E.g. {'A': array([0, 1]), 'B': array([2, 3])} -> [{'A': 0, 'B': 2}, {'A': 1, 'B': 3}]
+            if isinstance(self.agent.action_space, Dict):
+                some_key = next(iter(actions))
+                assert isinstance(actions, dict) and isinstance(actions[some_key], np.ndarray),\
+                    "ERROR: Cannot flip Dict-action batch with dict keys if returned value is not a dict OR " \
+                    "values of returned value are not np.ndarrays!"
+                # TODO: What if actions come as nested dicts (more than one level deep)?
+                # TODO: Use DataOpDict/Tuple's new `map` method.
+                if hasattr(actions[some_key], "__len__"):
+                    env_actions = [{key: value[i] for key, value in actions.items()} for i in range(len(actions[some_key]))]
+                else:
+                    # Action was not array type.
+                    env_actions = [{key: value for key, value in actions.items()}]
+            # Tuple action Spaces:
+            # E.g. Tuple(array([0, 1]), array([2, 3])) -> [(0, 2), (1, 3)]
+            elif isinstance(self.agent.action_space, Tuple):
+                assert isinstance(actions, tuple) and isinstance(actions[0], np.ndarray),\
+                    "ERROR: Cannot flip tuple-action batch if returned value is not a tuple OR " \
+                    "values of returned value are not np.ndarrays!"
+                # TODO: Use DataOpDict/Tuple's new `map` method.
+                env_actions = [tuple(value[i] for _, value in enumerate(actions)) for i in range(len(actions[0]))]
+            # No container batch-flipping necessary.
+            else:
+                env_actions = actions
+                if self.num_environments == 1 and env_actions.shape == ():
+                    env_actions = [env_actions]
+
+            for _ in range_(frameskip):
+                next_states, step_rewards, episode_terminals, _ = self.vector_env.step(actions=env_actions)
+
+                self.env_frames += self.num_environments
+                for i, step_reward in enumerate(step_rewards):
+                    env_rewards[i] += step_reward
+                if np.any(episode_terminals):
+                    break
+
+            # Only render once per action.
+            #if self.render:
+            #    self.vector_env.environments[0].render()
+
+            for i, env_id in enumerate(self.env_ids):
+                self.episode_returns[i] += env_rewards[i]
+                self.episode_timesteps[i] += 1
+
+                if 0 < max_timesteps_per_episode[i] <= self.episode_timesteps[i]:
+                    episode_terminals[i] = True
+                if self.worker_executes_preprocessing:
+                    self.state_is_preprocessed[env_id] = False
+                # Do accounting for finished episodes.
+                if episode_terminals[i]:
+                    episodes_executed += 1
+                    self.episodes_since_update += 1
+                    episode_duration = time.perf_counter() - self.episode_starts[i]
+                    self.finished_episode_returns[i].append(self.episode_returns[i])
+                    self.finished_episode_durations[i].append(episode_duration)
+                    self.finished_episode_timesteps[i].append(self.episode_timesteps[i])
+
+                    self.log_finished_episode(
+                        episode_return=self.episode_returns[i],
+                        duration=episode_duration,
+                        timesteps=self.episode_timesteps[i],
+                        env_num=i
+                    )
+
+                    # Reset this environment and its preprocecssor stack.
+                    env_states[i] = self.vector_env.reset(i)
+                    if self.worker_executes_preprocessing and self.preprocessors[env_id] is not None:
+                        self.preprocessors[env_id].reset()
+                        # This re-fills the sequence with the reset state.
+                        state, _ = self.agent.state_space.force_batch(env_states[i])
+                        # Pre - process, add to buffer
+                        self.preprocessed_states_buffer[i] = np.array(self.preprocessors[env_id].preprocess(state))
+                        self.state_is_preprocessed[env_id] = True
+
+                    self.episode_returns[i] = 0
+                    self.episode_timesteps[i] = 0
+                    self.episode_starts[i] = time.perf_counter()
+                else:
+                    # Otherwise assign states to next states
+                    env_states[i] = next_states[i]
+
+                if self.worker_executes_preprocessing and self.preprocessors[env_id] is not None:
+                    #next_state, _ = self.agent.state_space.force_batch(env_states[i])
+                    next_states[i] = np.array(self.preprocessors[env_id].preprocess(env_states[i]))  # next_state
+                self._observe(
+                    self.env_ids[i], preprocessed_states[i], env_actions[i], env_rewards[i], next_states[i],
+                    episode_terminals[i]
+                )
+            self.update_if_necessary(time_percentage=time_percentage)
+            timesteps_executed += self.num_environments
+            num_timesteps_reached = (0 < num_timesteps <= timesteps_executed)
+
+            if 0 < num_episodes <= episodes_executed or num_timesteps_reached:
+                break
+
+        total_time = (time.perf_counter() - start) or 1e-10
+
+        # Return values for current episode(s) if None have been completed.
+        if episodes_executed == 0:
+            mean_episode_runtime = 0
+            mean_episode_reward = np.mean(self.episode_returns)
+            mean_episode_reward_last_10_episodes = mean_episode_reward
+            max_episode_reward = np.max(self.episode_returns)
+            final_episode_reward = self.episode_returns[0]
+        else:
+            all_finished_durations = []
+            all_finished_rewards = []
+            for i in range_(self.num_environments):
+                all_finished_rewards.extend(self.finished_episode_returns[i])
+                all_finished_durations.extend(self.finished_episode_durations[i])
+            mean_episode_runtime = np.mean(all_finished_durations)
+            mean_episode_reward = np.mean(all_finished_rewards)
+            mean_episode_reward_last_10_episodes = np.mean(all_finished_rewards[-10:])
+            max_episode_reward = np.max(all_finished_rewards)
+            final_episode_reward = all_finished_rewards[-1]
+
+        self.episode_terminals = episode_terminals
+        self.env_states = env_states
+        results = dict(
+            runtime=total_time,
+            # Agent act/observe throughput.
+            timesteps_executed=timesteps_executed,
+            ops_per_second=(timesteps_executed / total_time),
+            # Env frames including action repeats.
+            env_frames=self.env_frames,
+            env_frames_per_second=(self.env_frames / total_time),
+            episodes_executed=episodes_executed,
+            episodes_per_minute=(episodes_executed/(total_time / 60)),
+            mean_episode_runtime=mean_episode_runtime,
+            mean_episode_reward=mean_episode_reward,
+            mean_episode_reward_last_10_episodes=mean_episode_reward_last_10_episodes,
+            max_episode_reward=max_episode_reward,
+            final_episode_reward=final_episode_reward
+        )
+
+        # Total time of run.
+        self.logger.info("Finished execution in {} s".format(total_time))
+        # Total (RL) timesteps (actions) done (and timesteps/sec).
+        self.logger.info("Time steps (actions) executed: {} ({} ops/s)".
+                         format(results['timesteps_executed'], results["ops_per_second"]))
+        # Total env-timesteps done (including action repeats) (and env-timesteps/sec).
+        self.logger.info("Env frames executed (incl. action repeats): {} ({} frames/s)".
+                         format(results['env_frames'], results["env_frames_per_second"]))
+        # Total episodes done (and episodes/min).
+        self.logger.info("Episodes finished: {} ({} episodes/min)".
+                         format(results['episodes_executed'], results["episodes_per_minute"]))
+        self.logger.info("Mean episode runtime: {}s".format(results["mean_episode_runtime"]))
+        self.logger.info("Mean episode reward: {}".format(results["mean_episode_reward"]))
+        self.logger.info("Mean episode reward (last 10 episodes): {}".format(
+            results["mean_episode_reward_last_10_episodes"])
+        )
+        self.logger.info("Max. episode reward: {}".format(results["max_episode_reward"]))
+        self.logger.info("Final episode reward: {}".format(results["final_episode_reward"]))
+
+        return results
+
+    def _observe(self, env_ids, states, actions, rewards, next_states, terminals):
+        # TODO: If worker does not execute preprocessing, next state is not preprocessed here.
+        # Observe per environment.
+        self.agent.observe(
+            preprocessed_states=states, actions=actions, internals=[],
+            rewards=rewards, next_states=next_states,
+            terminals=terminals, env_id=env_ids
+        )
+
