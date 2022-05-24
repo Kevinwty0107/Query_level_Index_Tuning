@@ -20,11 +20,11 @@ import re
 
 
 # TODO stick somewhere else
-TPCH_DIR='/Users/wangtaiyi/Documents/Graduate/Cambridge/Research/RL/Learning_Index_Selection/index_code/tpch-tool' 
+TPCH_DIR='~/Desktop/research/Multi_level_Index_Tuning/tpch-tool' 
 TPCH_TOOL_DIR = os.path.join(TPCH_DIR, 'dbgen')
 DATA_DIR = '/tmp/tables'
-DSN = "dbname=postgres user=wangtaiyi"
-TPCH_DSN = "dbname=tpch user=wangtaiyi"
+DSN = "dbname=postgres user=tw557"
+TPCH_DSN = "dbname=tpch user=tw557"
 
 class Action(enum.IntEnum):
     noop, duplicate_index, index = 0, 1, 2
@@ -76,11 +76,15 @@ class PostgresSystemEnvironment(SystemEnvironment):
         cols, tbl = action['index'], action['table']
         index = '_'.join(cols) + '_42'
         if index in self.index_set:
+            start = time.monotonic()
             self.logger.info('action cannot complete (index already in index set)')
             action_type = Action.duplicate_index.name
+            act_time = time.monotonic()-start
         elif cols == []:
+            start = time.monotonic()
             self.logger.info('action cannot complete (is no-op)') 
             action_type = Action.noop.name
+            act_time = time.monotonic()-start
         else:
             with self.tpch_cxn.cursor() as curs:
                 try:
@@ -90,12 +94,12 @@ class PostgresSystemEnvironment(SystemEnvironment):
                                 (index, tbl, ','.join(cols)))            
         
                     self.index_set.add(index)
-                    act_time = time.monotonic-start
+                    act_time = time.monotonic()-start
                     action_type = Action.index.name
                 except pg.Error as e:
                     start = time.monotonic()
                     print(e)
-                    act_time = time.monotonic-start
+                    act_time = time.monotonic()-start
                     action_type = Action.noop.name
 
         return act_time, action_type

@@ -33,7 +33,7 @@ then
 
     # config
     mkdir ${RESULT_DIR}/conf
-    cp conf/{dqn,spg,experiment1}.json ${RESULT_DIR}/conf
+    cp conf/{dqn,spg,experiment}.json ${RESULT_DIR}/conf
 
     #
     # build workload, run default
@@ -42,7 +42,7 @@ then
     time python3 src/common/postgres_controller.py \
     --dqn=True \
     --config=conf/dqn.json \
-    --experiment_config=conf/experiment1.json \
+    --experiment_config=conf/experiment.json \
     --result_dir=${RESULT_DIR} \
     --generate_workload=True \
     --with_agent=False \
@@ -52,7 +52,7 @@ then
     # run full
     #
     echo "#### RUNNING FULL ON WORKLOAD ####" ;
-    time python3 src/common/postgres_controller.py --dqn=True --config=conf/dqn.json --experiment_config=conf/experiment1.json --result_dir=${RESULT_DIR} --generate_workload=False --with_agent=False --default_baseline=False --seed=${SEED};
+    time python3 src/common/postgres_controller.py --dqn=True --config=conf/dqn.json --experiment_config=conf/experiment.json --result_dir=${RESULT_DIR} --generate_workload=False --with_agent=False --default_baseline=False --seed=${SEED};
     #
     # run dqn
     #
@@ -62,15 +62,15 @@ then
     #
     # run spg
     #
-    #echo "#### RUNNING SPG ON WORKLOAD ####" ;
-    #time python3 src/common/postgres_controller.py --dqn=False --config=conf/spg.json --experiment_config=conf/experiment1.json --result_dir=${RESULT_DIR} --generate_workload=False --seed=${SEED} &> ${RESULT_DIR}/spg.log ;
-    #mv ${RESULT_DIR}/spg.log ${RESULT_DIR}/spg ;
+    echo "#### RUNNING SPG ON WORKLOAD ####" ;
+    time python3 src/common/postgres_controller.py --dqn=False --config=conf/spg.json --experiment_config=conf/experiment1.json --result_dir=${RESULT_DIR} --generate_workload=False --seed=${SEED} &> ${RESULT_DIR}/spg.log ;
+    mv ${RESULT_DIR}/spg.log ${RESULT_DIR}/spg ;
     #
     # run tuner
     #
-    #echo "#### RUNNING TUNER ON WORKLOAD ####" ;
-    #time python src/baseline/postgres_tuner.py --experiment_config=conf/experiment1.json --data_dir=${RESULT_DIR} &> ${RESULT_DIR}/tuner.log ;
-    #mv ${RESULT_DIR}/tuner.log ${RESULT_DIR}/tuner ;
+    echo "#### RUNNING TUNER ON WORKLOAD ####" ;
+    time python src/baseline/postgres_tuner.py --experiment_config=conf/experiment1.json --data_dir=${RESULT_DIR} &> ${RESULT_DIR}/tuner.log ;
+    mv ${RESULT_DIR}/tuner.log ${RESULT_DIR}/tuner ;
 
 elif [ $1 = "imdb" ]
 then 

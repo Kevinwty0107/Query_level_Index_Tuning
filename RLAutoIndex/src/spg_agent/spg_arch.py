@@ -10,7 +10,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from sklearn.utils.linear_assignment_ import linear_assignment # Hungarian algorithm
+
+from scipy.optimize import linear_sum_assignment as linear_assignment
+# from sklearn.utils.linear_assignment_ import linear_assignment # Hungarian algorithm
 """
 Aside: on assignment problem: 
 - C[i,j], C \in \mathbb{R}^{N \times N}, is cost of assigning worker i a task j

@@ -1,0 +1,118 @@
+2022-05-24 17:22:23.433910: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
+2022-05-24 17:22:23.433931: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
+WARNING:tensorflow:From /home/tw557/.local/lib/python3.8/site-packages/tensorflow/python/compat/v2_compat.py:111: disable_resource_variables (from tensorflow.python.ops.variable_scope) is deprecated and will be removed in a future version.
+Instructions for updating:
+non-resource variables are not supported in the long term
+22-05-24 17:22:29:WARNING:From /home/tw557/.local/lib/python3.8/site-packages/tensorflow/python/compat/v2_compat.py:111: disable_resource_variables (from tensorflow.python.ops.variable_scope) is deprecated and will be removed in a future version.
+Instructions for updating:
+non-resource variables are not supported in the long term
+pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+No display for PyGame available. No human rendering possible.
+INFO / postgres_controller / Starting controller script...
+
+INFO / postgres_controller / agent config: {'type': 'dqn', 'discount': 0.99, 'huber_loss': True, 'optimizer_spec': {'type': 'adam', 'learning_rate': 0.00025}, 'memory_spec': {'type': 'prioritized_replay', 'capacity': 2048}, 'observe_spec': {'buffer_enabled': False}, 'network_spec': [{'type': 'embedding', 'embed_dim': 128, 'vocab_size': 0}, {'type': 'reshape', 'flatten': True}, {'type': 'dense', 'units': 128, 'activation': 'relu', 'scope': 'dense_1'}], 'dueling_q': True, 'shared_container_action_target': False, 'policy_spec': {'type': 'dueling-policy', 'units_state_value_stream': 32, 'action_adapter_spec': {'pre_network_spec': [{'type': 'dense', 'units': 32}]}}, 'exploration_spec': {'epsilon_spec': {'decay_spec': {'type': 'linear_decay', 'from': 1.0, 'to': 0.05, 'start_timestep': 0, 'num_timesteps': 4000}}}, 'update_spec': {'update_mode': 'time_steps', 'do_updates': True, 'update_interval': 4, 'steps_before_update': 32, 'batch_size': 32, 'sync_interval': 24, 'update_steps': 4}}
+
+INFO / postgres_controller / schema config: {'input_sequence_size': 16, 'include_default': False, 'max_fields_per_index': 3}
+
+INFO / postgres_controller / experiment config: {'max_size': 0, 'max_runtime': 0, 'reward_penalty': 0, 'runtime_weight': 1.0, 'size_weight': 0.001, 'n_selections': 4, 'n_queries_per_episode': 25, 'n_train_episodes': 500, 'n_test_episodes': 3, 'n_executions': 3, 'n_opentuner_search_steps': 5, 'tables': ['lineitem']}
+
+INFO / postgres_controller / computing column selectivities...
+
+INFO / postgres_controller / ...took 0.00 seconds
+
+INFO / agent / Parsed state space definition: Intbox((16,) <class 'numpy.int32'> )
+
+INFO / agent / Parsed action space definition: Dict([('index_column0', "Intbox(() <class 'numpy.int32'> )"), ('index_column1', "Intbox(() <class 'numpy.int32'> )"), ('index_column2', "Intbox(() <class 'numpy.int32'> )")])
+
+INFO / agent / No preprocessing required.
+
+Expose API sync from synchronizable to dueling-policy code:
+@rlgraph_api(component=self, must_be_complete=False, ok_to_overwrite=False)
+def sync(self, values_):
+	return getattr(self.sub_components['synchronizable'], 'sync')(values_)
+
+INFO / graph_executor / Execution spec is: {'mode': 'single', 'distributed_spec': None, 'disable_monitoring': False, 'gpu_spec': {'gpus_enabled': False, 'max_usable_gpus': 0, 'fake_gpus_if_necessary': False, 'cuda_devices': None, 'per_process_gpu_memory_fraction': None, 'allow_memory_growth': False}, 'device_strategy': 'default', 'default_device': None, 'device_map': {}, 'session_config': {'type': 'monitored-training-session', 'allow_soft_placement': True, 'log_device_placement': False}, 'seed': None, 'enable_profiler': False, 'profiler_frequency': 1000, 'enable_timeline': False, 'timeline_frequency': 1}
+
+2022-05-24 17:22:33.853366: I tensorflow/core/platform/cpu_feature_guard.cc:151] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX2 FMA
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2022-05-24 17:22:33.853993: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcuda.so.1'; dlerror: libcuda.so.1: cannot open shared object file: No such file or directory; LD_LIBRARY_PATH: /auto/homes/tw557/.local/lib/python3.8/site-packages/cv2/../../lib64:
+2022-05-24 17:22:33.854014: W tensorflow/stream_executor/cuda/cuda_driver.cc:269] failed call to cuInit: UNKNOWN ERROR (303)
+2022-05-24 17:22:33.854032: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:156] kernel driver does not appear to be running on this host (aria.cl.cam.ac.uk): /proc/driver/nvidia/version does not exist
+WARNING / tensorflow_executor / `device_map` given for device-strategy=`default`. Map will be ignored. Use device-strategy=`custom` together with a `device_map`.
+
+INFO / tensorflow_executor / Initializing graph executor with default device strategy. Backend will assign all visible devices.
+
+INFO / tensorflow_executor / GPUs enabled: False. Usable GPUs: None
+
+INFO / graph_executor / Components created: 94
+
+INFO / meta_graph_builder / Meta-graph build completed in 1.7127360939994105 s.
+
+INFO / meta_graph_builder / Meta-graph op-records generated: 942
+
+WARNING:tensorflow:From /auto/homes/tw557/Desktop/research/Multi_level_Index_Tuning/RLAutoIndex/src/common/../dqn_agent/../../../rlgraph/utils/initializer.py:94: calling Constant.__init__ (from tensorflow.python.ops.init_ops) with dtype is deprecated and will be removed in a future version.
+Instructions for updating:
+Call initializer instance with the dtype argument instead of passing it to the constructor
+<tensorflow.python.ops.init_ops.TruncatedNormal object at 0x7f9d1c32c400>
+<tensorflow.python.ops.init_ops.TruncatedNormal object at 0x7f9d1c32ca60>
+WARNING / deprecation / From /auto/homes/tw557/Desktop/research/Multi_level_Index_Tuning/RLAutoIndex/src/common/../dqn_agent/../../../rlgraph/utils/initializer.py:94: calling Constant.__init__ (from tensorflow.python.ops.init_ops) with dtype is deprecated and will be removed in a future version.
+Instructions for updating:
+Call initializer instance with the dtype argument instead of passing it to the constructor
+
+WARNING:tensorflow:From /auto/homes/tw557/Desktop/research/Multi_level_Index_Tuning/RLAutoIndex/src/common/../dqn_agent/../../../rlgraph/components/helpers/segment_tree.py:236: div (from tensorflow.python.ops.math_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Deprecated in favor of operator or tf.math.divide.
+WARNING / deprecation / From /auto/homes/tw557/Desktop/research/Multi_level_Index_Tuning/RLAutoIndex/src/common/../dqn_agent/../../../rlgraph/components/helpers/segment_tree.py:236: div (from tensorflow.python.ops.math_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Deprecated in favor of operator or tf.math.divide.
+
+WARNING:tensorflow:From /auto/homes/tw557/Desktop/research/Multi_level_Index_Tuning/RLAutoIndex/src/common/../dqn_agent/../../../rlgraph/components/memories/prioritized_replay.py:168: calling map_fn (from tensorflow.python.ops.map_fn) with dtype is deprecated and will be removed in a future version.
+Instructions for updating:
+Use fn_output_signature instead
+WARNING / deprecation / From /auto/homes/tw557/Desktop/research/Multi_level_Index_Tuning/RLAutoIndex/src/common/../dqn_agent/../../../rlgraph/components/memories/prioritized_replay.py:168: calling map_fn (from tensorflow.python.ops.map_fn) with dtype is deprecated and will be removed in a future version.
+Instructions for updating:
+Use fn_output_signature instead
+
+INFO / graph_builder / Computation-Graph build completed in 1.9539274810013012 s (93 iterations).
+
+INFO / graph_builder / Actual graph ops generated: 3773
+
+INFO / graph_builder / Number of trainable parameters: 284333
+
+INFO / tensorflow_executor / Checking if all visible devices are in use for strategy: default. Available devices are: ['/device:CPU:0'].
+
+WARNING / tensorflow_executor / Warning: Device /device:CPU:0 is usable but has not been assigned.
+
+INFO / tensorflow_executor / Setting up singular monitored session for non-distributed mode. Session config: allow_soft_placement: true
+
+
+INFO:tensorflow:Graph was finalized.
+INFO / monitored_session / Graph was finalized.
+
+INFO:tensorflow:Running local_init_op.
+INFO / session_manager / Running local_init_op.
+
+INFO:tensorflow:Done running local_init_op.
+INFO / session_manager / Done running local_init_op.
+
+INFO / task_graph / Adding task  to task-graph.
+
+INFO / postgres_controller / numpy seed: 17
+
+INFO / postgres_controller / pytorch seed: 6881683879709887830
+
+INFO / postgres_controller / TRAINING
+
+INFO / postgres_controller / Starting episode 1/500
+
+Traceback (most recent call last):
+  File "src/common/postgres_controller.py", line 746, in <module>
+    main(sys.argv)
+  File "src/common/postgres_controller.py", line 677, in main
+    controller.train(train)
+  File "src/common/postgres_controller.py", line 286, in train
+    agent_state = self.converter.system_to_agent_state(query=query, 
+  File "/auto/homes/tw557/Desktop/research/Multi_level_Index_Tuning/RLAutoIndex/src/common/../dqn_agent/postgres_converter.py", line 123, in system_to_agent_state
+    with open(path, 'w', newline='') as f:
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/wangtaiyi/Documents/Graduate/Cambridge/Research/RL/Learning_Index_Selection/index_Code/query_token.txt'

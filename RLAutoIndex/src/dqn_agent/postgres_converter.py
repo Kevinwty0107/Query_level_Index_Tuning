@@ -119,10 +119,6 @@ class PostgresConverter(Converter):
 
         query_tokens = query.as_tokens().copy()
 
-        path = "/Users/wangtaiyi/Documents/Graduate/Cambridge/Research/RL/Learning_Index_Selection/index_Code/query_token.txt"
-        with open(path, 'w', newline='') as f:
-            f.writelines(query_tokens)
-            f.write('\n')
 
         
         # TBD/TO BE DELETED 

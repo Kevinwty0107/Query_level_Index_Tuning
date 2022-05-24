@@ -1,0 +1,47 @@
+2022-05-24 17:22:39.644913: W tensorflow/stream_executor/platform/default/dso_loader.cc:64] Could not load dynamic library 'libcudart.so.11.0'; dlerror: libcudart.so.11.0: cannot open shared object file: No such file or directory
+2022-05-24 17:22:39.644932: I tensorflow/stream_executor/cuda/cudart_stub.cc:29] Ignore above cudart dlerror if you do not have a GPU set up on your machine.
+WARNING:tensorflow:From /home/tw557/.local/lib/python3.8/site-packages/tensorflow/python/compat/v2_compat.py:111: disable_resource_variables (from tensorflow.python.ops.variable_scope) is deprecated and will be removed in a future version.
+Instructions for updating:
+non-resource variables are not supported in the long term
+22-05-24 17:22:42:WARNING:From /home/tw557/.local/lib/python3.8/site-packages/tensorflow/python/compat/v2_compat.py:111: disable_resource_variables (from tensorflow.python.ops.variable_scope) is deprecated and will be removed in a future version.
+Instructions for updating:
+non-resource variables are not supported in the long term
+pygame 2.1.2 (SDL 2.0.16, Python 3.8.10)
+Hello from the pygame community. https://www.pygame.org/contribute.html
+No display for PyGame available. No human rendering possible.
+INFO / postgres_controller / Starting controller script...
+
+INFO / postgres_controller / agent config: {'embed_dim': 48, 'rnn_dim': 48, 'bidirectional': False, 'sinkhorn_rds': 10, 'sinkhorn_tau': 0.05, 'n_workers': 0, 'epsilon': 1.0, 'epsilon_target': 0.05, 'epsilon_decay_steps': 6000, 'actor_lr': 0.00025, 'critic_lr': 0.00025, 'lr_decay': True, 'actor_lr_decay_rate': 0.99, 'critic_lr_decay_rate': 0.99, 'actor_lr_steps_between_decay': 10, 'critic_lr_steps_between_decay': 10, 'actor_lr_decay_steps': 6000, 'critic_lr_decay_steps': 6000, 'batch_size': 64, 'buffer_size': 2048, 'steps_before_update': 32, 'steps_between_updates': 4, 'update_steps_per_updates': 4}
+
+INFO / postgres_controller / schema config: {'N': 4, 'K': 12}
+
+INFO / postgres_controller / experiment config: {'max_size': 0, 'max_runtime': 0, 'reward_penalty': 0, 'runtime_weight': 1.0, 'size_weight': 0.001, 'n_selections': 4, 'n_queries_per_episode': 25, 'n_train_episodes': 500, 'n_test_episodes': 3, 'n_executions': 3, 'n_opentuner_search_steps': 5, 'tables': ['lineitem']}
+
+INFO / postgres_controller / computing column selectivities...
+
+INFO / postgres_controller / ...took 0.00 seconds
+
+INFO / postgres_controller / numpy seed: 17
+
+INFO / postgres_controller / pytorch seed: 15378648080110670192
+
+INFO / postgres_controller / TRAINING
+
+INFO / postgres_controller / Starting episode 1/500
+
+Traceback (most recent call last):
+  File "src/common/postgres_controller.py", line 746, in <module>
+    main(sys.argv)
+  File "src/common/postgres_controller.py", line 677, in main
+    controller.train(train)
+  File "src/common/postgres_controller.py", line 292, in train
+    agent_action = self.agent_api.get_action(agent_state)
+  File "/auto/homes/tw557/Desktop/research/Multi_level_Index_Tuning/RLAutoIndex/src/common/postgres_agent.py", line 57, in get_action
+    return self.agent.get_action(agent_state)
+  File "/auto/homes/tw557/Desktop/research/Multi_level_Index_Tuning/RLAutoIndex/src/common/../dqn_agent/../spg_agent/spg_agent.py", line 72, in get_action
+    M, P = self.actor(agent_state)
+  File "/home/tw557/.local/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1110, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/auto/homes/tw557/Desktop/research/Multi_level_Index_Tuning/RLAutoIndex/src/common/../dqn_agent/../spg_agent/./spg_arch.py", line 99, in forward
+    p[assignment[:,0], assignment[:,1]] = 1
+TypeError: tuple indices must be integers or slices, not tuple

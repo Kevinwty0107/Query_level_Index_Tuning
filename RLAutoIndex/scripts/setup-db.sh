@@ -58,9 +58,8 @@ case "$subcommand" in
 
    
    #linux
-   
-   #sudo apt update;
-   #sudo apt install postgresql postgresql-contrib postgresql-client postgresql-client-common libpq-dev;
+   apt update;
+   apt install postgresql postgresql-contrib postgresql-client postgresql-client-common libpq-dev;
 
    
    #MacOS
